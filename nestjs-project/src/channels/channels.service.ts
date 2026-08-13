@@ -21,6 +21,17 @@ function isPgUniqueViolationOnColumn(err: unknown, column: string): boolean {
 export class ChannelsService {
   constructor(private readonly dataSource: DataSource) {}
 
+  async getChannelByUserId(userId: string): Promise<Channel> {
+    const repository = this.dataSource.getRepository(Channel);
+    const channel = await repository.findOne({
+      where: { user_id: userId },
+    });
+    if (!channel) {
+      throw new Error('Channel not found for user');
+    }
+    return channel;
+  }
+
   async createChannel(userId: string, email: string): Promise<Channel> {
     const baseNickname = sanitizeNickname(email.split('@')[0]);
 

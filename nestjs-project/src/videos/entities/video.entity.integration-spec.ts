@@ -132,12 +132,18 @@ describe('Video Entity (Integration)', () => {
       const afterCreation = new Date();
 
       expect(video.id).toBeDefined();
-      expect(video.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+      expect(video.id).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+      );
 
       expect(video.created_at).toBeDefined();
       expect(video.updated_at).toBeDefined();
-      expect(video.created_at.getTime()).toBeGreaterThanOrEqual(beforeCreation.getTime());
-      expect(video.created_at.getTime()).toBeLessThanOrEqual(afterCreation.getTime());
+      expect(video.created_at.getTime()).toBeGreaterThanOrEqual(
+        beforeCreation.getTime(),
+      );
+      expect(video.created_at.getTime()).toBeLessThanOrEqual(
+        afterCreation.getTime(),
+      );
     });
 
     it('should maintain foreign key relationship to Channel', async () => {
