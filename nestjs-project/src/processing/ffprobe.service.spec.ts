@@ -28,7 +28,11 @@ describe('FfprobeService (Unit)', () => {
 
       // Mock execFile to call callback with the mocked output
       mockExecFile.mockImplementation(
-        (_file: string, _args: string[], callback: Function) => {
+        (
+          _file: string,
+          _args: string[],
+          callback: (error: Error | null, result?: { stdout: string }) => void,
+        ) => {
           setTimeout(
             () => callback(null, { stdout: JSON.stringify(mockOutput) }),
             0,
@@ -48,7 +52,11 @@ describe('FfprobeService (Unit)', () => {
       };
 
       mockExecFile.mockImplementation(
-        (_file: string, _args: string[], callback: Function) => {
+        (
+          _file: string,
+          _args: string[],
+          callback: (error: Error | null, result?: { stdout: string }) => void,
+        ) => {
           setTimeout(
             () => callback(null, { stdout: JSON.stringify(mockOutput) }),
             0,
@@ -63,7 +71,11 @@ describe('FfprobeService (Unit)', () => {
 
     it('should throw MetadataExtractionError when ffprobe fails', async () => {
       mockExecFile.mockImplementation(
-        (_file: string, _args: string[], callback: Function) => {
+        (
+          _file: string,
+          _args: string[],
+          callback: (error: Error | null) => void,
+        ) => {
           setTimeout(() => callback(new Error('ffprobe not found')), 0);
         },
       );

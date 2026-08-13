@@ -38,7 +38,7 @@ export class FfprobeService {
         filePath,
       ]);
 
-      const output: FFprobeOutput = JSON.parse(stdout);
+      const output = JSON.parse(stdout) as FFprobeOutput;
 
       // Try to get duration from format first, then from streams
       const duration = output.format?.duration || output.streams?.[0]?.duration;
