@@ -23,7 +23,7 @@ See `docs/diagrams/software-arch.mermaid` for the full diagram. Key containers:
 - **Video Worker** (FFmpeg) → consumes jobs from queue, processes videos, updates DB and storage
 - **Database** (PostgreSQL) → users, channels, videos, comments, likes
 - **Object Storage** (S3/MinIO) → video files and thumbnails
-- **Message Queue** (TBD) → video processing job queue
+- **Message Queue** (Redis + BullMQ) → video processing job queue
 - **Email Service** (SMTP) → account confirmation and password recovery
 
 ## Docker Networking
@@ -105,3 +105,57 @@ Skip documentation lookup only for trivial operations such as:
 
 If a library is involved and there is uncertainty, documentation lookup is mandatory.
 If the documentation returned does not match the installed version, flag the discrepancy before proceeding.
+
+## Videos Module (Phase 03)
+
+### Overview
+
+The `videos` module handles video upload, storage, background processing, and streaming — the foundation for the video-sharing platform. Uploads are handled via direct multipart PUT to MinIO/S3 (not through the API), processing happens asynchronously via a BullMQ job queue, and streaming is served via presigned URLs for Range-based playback.
+
+### Key Components
+
+- **VideosService** — Orchestrates upload initiation, completion, status queries, and presigned URL generation
+- **VideosController** — 5 public endpoints (initiate upload, complete upload, check status, stream, download)
+- **VideoQueueService** — Enqueues background processing jobs
+- **Video Entity** — Lifecycle: `draft` → `uploaded` → `processing` → `ready | failed`
+- **StorageService** — Wraps AWS SDK for multipart upload, presigned URLs, key layout per `docs/phases/phase-03-videos/`
+
+### Endpoints
+
+| Method | Route | Auth | Purpose |
+|--------|-------|------|---------|
+| `POST` | `/videos` | JWT (channel owner) | Initiate upload; returns presigned part URLs |
+| `POST` | `/videos/:publicId/complete-upload` | JWT (owner) | Finalize multipart upload; enqueue processing job |
+| `GET` | `/videos/:publicId` | JWT (owner) | Fetch video status (draft, processing, ready, failed) |
+| `GET` | `/videos/:publicId/stream` | Anonymous | Get presigned streaming URL (Range-capable) |
+| `GET` | `/videos/:publicId/download` | Anonymous | Get presigned download URL (attachment) |
+
+### Background Processing (Worker)
+
+A separate NestJS worker process consumes `video.processing` jobs from the Redis queue. For each job:
+
+1. Download the video object from storage
+2. Extract duration via `ffprobe`
+3. Generate a thumbnail frame at 10% duration offset via `ffmpeg`
+4. Upload the thumbnail to storage
+5. Update the video row: `status = 'ready'`, `duration_seconds`, `thumbnail_key`
+6. On error: `status = 'failed'`, `failure_reason` (with retry/backoff via BullMQ)
+
+**Bootstrap:** `npm run start:worker` or `docker compose up worker`
+
+### Configuration
+
+See `docs/phases/phase-03-videos/library-refs.md` for all environment variables (S3 endpoint, bucket, credentials, Redis host/port).
+
+### Decision Reference
+
+All technical decisions for this module are documented in `docs/decisions/technical-decisions-phase-03-videos.md`. Key decisions:
+
+- **TD-01:** BullMQ + Redis for the job queue (retry/backoff, stalled-job recovery)
+- **TD-02:** Multipart presigned URLs for 10GB uploads (no API bottleneck)
+- **TD-03:** Single S3 bucket with hierarchical key layout
+- **TD-04:** Separate NestJS worker process + direct `child_process` FFmpeg/FFprobe
+- **TD-05:** Short `nanoid`-based public IDs (12 chars, collision-retried)
+- **TD-06:** Presigned GET URLs for streaming and download (direct storage, no API proxy)
+- **TD-07:** Linear status enum + queue-native retry/backoff
+- **TD-08:** Percentage-of-duration thumbnail offset (10% of total duration)
