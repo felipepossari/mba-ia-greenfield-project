@@ -6,6 +6,7 @@ const requiredEnv = {
   DB_NAME: 'db',
   JWT_SECRET: 'secret',
   JWT_REFRESH_SECRET: 'refresh-secret',
+  S3_BUCKET: 'streamtube',
 };
 
 const validate = (env: Record<string, string>) =>
