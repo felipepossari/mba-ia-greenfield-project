@@ -7,6 +7,7 @@ import {
   Post,
   Param,
 } from '@nestjs/common';
+import { Public } from '../auth/decorators/public.decorator';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -169,5 +170,69 @@ export class VideosController {
     const channel = await this.channelsService.getChannelByUserId(user.sub);
 
     return this.videosService.getStatus(channel.id, publicId);
+  }
+
+  @Public()
+  @Get(':publicId/stream')
+  @ApiOperation({
+    summary: 'Get video stream URL',
+    description: 'Get a presigned URL for streaming a ready video.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Stream URL retrieved successfully',
+    schema: {
+      properties: {
+        url: { type: 'string' },
+        expiresAt: { type: 'string', format: 'date-time' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Video not found',
+    schema: { $ref: getSchemaPath(ApiErrorEnvelope) },
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Video is not ready for playback',
+    schema: { $ref: getSchemaPath(ApiErrorEnvelope) },
+  })
+  async getStreamUrl(
+    @Param('publicId') publicId: string,
+  ): Promise<{ url: string; expiresAt: string }> {
+    return this.videosService.getStreamUrl(publicId);
+  }
+
+  @Public()
+  @Get(':publicId/download')
+  @ApiOperation({
+    summary: 'Get video download URL',
+    description: 'Get a presigned URL for downloading a ready video.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Download URL retrieved successfully',
+    schema: {
+      properties: {
+        url: { type: 'string' },
+        expiresAt: { type: 'string', format: 'date-time' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Video not found',
+    schema: { $ref: getSchemaPath(ApiErrorEnvelope) },
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Video is not ready for playback',
+    schema: { $ref: getSchemaPath(ApiErrorEnvelope) },
+  })
+  async getDownloadUrl(
+    @Param('publicId') publicId: string,
+  ): Promise<{ url: string; expiresAt: string }> {
+    return this.videosService.getDownloadUrl(publicId);
   }
 }

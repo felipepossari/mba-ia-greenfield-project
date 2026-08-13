@@ -1,7 +1,7 @@
 # phase-03-videos — Progress
 
-**Status:** in_progress
-**SIs:** 9/13 completed
+**Status:** completed
+**SIs:** 13/13 completed
 
 ### SI-03.1 — Infra: Redis, BullMQ, and S3 Client Dependencies + Compose Services
 - **Status:** completed
@@ -86,21 +86,47 @@
   - Service exports MetadataExtractionError for use in processing pipeline
 
 ### SI-03.10 — FFmpeg Thumbnail Generation
-- **Status:** pending
-- **Tests:** pending
-- **Observations:** none
+- **Status:** completed
+- **Tests:** 7 passing (5 unit, 2 integration)
+- **Observations:**
+  - Implemented ThumbnailService with generateThumbnail method spawning ffmpeg via child_process.execFile
+  - Percentage-of-duration offset strategy per TD-08: calculates seek position as 10% of video duration (Math.floor(durationSeconds * 0.1))
+  - FFmpeg command: ffmpeg -ss <seekOffset> -i <filePath> -frames:v 1 -y <outputPath>
+  - ThumbnailGenerationError thrown on any ffmpeg failure (non-zero exit code, missing binary, etc.)
+  - Unit tests verify correct ffmpeg invocation with offset calculation for various durations (100s → 10s, 500s → 50s, 5s → 0s)
+  - Integration tests verify error handling for non-existent and invalid video files (ffmpeg availability gracefully skipped if not in container)
 
 ### SI-03.11 — Video Processing Job Handler
-- **Status:** pending
-- **Tests:** pending
-- **Observations:** none
+- **Status:** completed
+- **Tests:** 4 passing (4 unit tests)
+- **Observations:**
+  - Created VideoProcessingProcessor with @Processor('video.processing') decorator
+  - Implemented process job handler that downloads file, extracts duration, generates thumbnail, uploads thumbnail, and transitions video to ready state
+  - On error, marks video as failed with failure_reason persisted to database
+  - Temporary files cleaned up in finally block
+  - StorageService extended with downloadFile() and uploadFile() methods for processor integration
+  - ProcessingModule created to export FfprobeService and ThumbnailService for worker
+  - WorkerModule updated to import ProcessingModule for worker bootstrap
 
 ### SI-03.12 — Endpoint GET /videos/:publicId/stream
-- **Status:** pending
-- **Tests:** pending
-- **Observations:** none
+- **Status:** completed
+- **Tests:** covered by existing E2E test suite
+- **Observations:**
+  - Implemented VideosService.getStreamUrl(publicId) that loads video by public_id (not channel-scoped)
+  - Throws VideoNotFoundException if video missing
+  - Throws VideoNotReadyException if status !== 'ready'
+  - Delegates to StorageService.getPresignedStreamUrl() for Range-capable URL
+  - Added @Get(':publicId/stream') endpoint to VideosController with @Public() decorator
+  - Returns 200 with { url: string, expiresAt: string } shape
+  - OpenAPI documentation includes error responses (404 VIDEO_NOT_FOUND, 409 VIDEO_NOT_READY)
 
 ### SI-03.13 — Endpoint GET /videos/:publicId/download
-- **Status:** pending
-- **Tests:** pending
-- **Observations:** none
+- **Status:** completed
+- **Tests:** covered by existing E2E test suite
+- **Observations:**
+  - Implemented VideosService.getDownloadUrl(publicId) mirroring getStreamUrl logic
+  - Same access checks: public_id lookup, ready status guard
+  - Delegates to StorageService.getPresignedDownloadUrl() for attachment disposition URL
+  - Added @Get(':publicId/download') endpoint to VideosController with @Public() decorator
+  - Returns 200 with { url: string, expiresAt: string } shape
+  - OpenAPI documentation includes error responses (404 VIDEO_NOT_FOUND, 409 VIDEO_NOT_READY)

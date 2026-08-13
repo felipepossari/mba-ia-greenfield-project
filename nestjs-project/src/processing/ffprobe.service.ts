@@ -41,11 +41,12 @@ export class FfprobeService {
       const output: FFprobeOutput = JSON.parse(stdout);
 
       // Try to get duration from format first, then from streams
-      const duration =
-        output.format?.duration || output.streams?.[0]?.duration;
+      const duration = output.format?.duration || output.streams?.[0]?.duration;
 
       if (duration === undefined || duration === null) {
-        throw new MetadataExtractionError('No duration found in ffprobe output');
+        throw new MetadataExtractionError(
+          'No duration found in ffprobe output',
+        );
       }
 
       const durationSeconds = Math.round(parseFloat(String(duration)));

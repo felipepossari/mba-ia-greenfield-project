@@ -29,7 +29,10 @@ describe('FfprobeService (Unit)', () => {
       // Mock execFile to call callback with the mocked output
       mockExecFile.mockImplementation(
         (_file: string, _args: string[], callback: Function) => {
-          setTimeout(() => callback(null, { stdout: JSON.stringify(mockOutput) }), 0);
+          setTimeout(
+            () => callback(null, { stdout: JSON.stringify(mockOutput) }),
+            0,
+          );
         },
       );
 
@@ -46,7 +49,10 @@ describe('FfprobeService (Unit)', () => {
 
       mockExecFile.mockImplementation(
         (_file: string, _args: string[], callback: Function) => {
-          setTimeout(() => callback(null, { stdout: JSON.stringify(mockOutput) }), 0);
+          setTimeout(
+            () => callback(null, { stdout: JSON.stringify(mockOutput) }),
+            0,
+          );
         },
       );
 

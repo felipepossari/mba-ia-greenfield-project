@@ -45,9 +45,9 @@ describe('FfprobeService (Integration)', () => {
       // Create a text file that ffprobe will reject
       fs.writeFileSync(testVideoPath, 'This is not a video file');
 
-      await expect(
-        service.extractDuration(testVideoPath),
-      ).rejects.toThrow(MetadataExtractionError);
+      await expect(service.extractDuration(testVideoPath)).rejects.toThrow(
+        MetadataExtractionError,
+      );
     });
   });
 });

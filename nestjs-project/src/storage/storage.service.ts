@@ -6,8 +6,11 @@ import {
   CompleteMultipartUploadCommand,
   GetObjectCommand,
   UploadPartCommand,
+  PutObjectCommand,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { createReadStream } from 'fs';
+import type { Readable } from 'stream';
 import storageConfig from '../config/storage.config';
 
 const PRESIGNED_URL_EXPIRY = 15 * 60; // 15 minutes in seconds
@@ -183,5 +186,32 @@ export class StorageService {
     ).toISOString();
 
     return { url, expiresAt };
+  }
+
+  async downloadFile(key: string): Promise<Readable> {
+    const command = new GetObjectCommand({
+      Bucket: this.bucket,
+      Key: key,
+    });
+
+    const response = await this.s3Client.send(command);
+
+    if (!response.Body) {
+      throw new Error('No body in GetObject response');
+    }
+
+    return response.Body as Readable;
+  }
+
+  async uploadFile(filePath: string, key: string): Promise<void> {
+    const fileStream = createReadStream(filePath);
+
+    const command = new PutObjectCommand({
+      Bucket: this.bucket,
+      Key: key,
+      Body: fileStream,
+    });
+
+    await this.s3Client.send(command);
   }
 }

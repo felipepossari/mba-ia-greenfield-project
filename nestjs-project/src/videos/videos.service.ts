@@ -13,6 +13,7 @@ import {
   VideoNotFoundException,
   UploadAlreadyCompletedException,
   InvalidUploadPartsException as VideoInvalidUploadPartsException,
+  VideoNotReadyException,
 } from './videos.exceptions';
 
 const PG_UNIQUE_VIOLATION = '23505';
@@ -188,5 +189,41 @@ export class VideosService {
       failureReason: video.failure_reason,
       createdAt: video.created_at.toISOString(),
     };
+  }
+
+  async getStreamUrl(
+    publicId: string,
+  ): Promise<{ url: string; expiresAt: string }> {
+    const video = await this.videoRepository.findOne({
+      where: { public_id: publicId },
+    });
+
+    if (!video) {
+      throw new VideoNotFoundException();
+    }
+
+    if (video.status !== VideoStatus.READY) {
+      throw new VideoNotReadyException();
+    }
+
+    return this.storageService.getPresignedStreamUrl(video.storage_key);
+  }
+
+  async getDownloadUrl(
+    publicId: string,
+  ): Promise<{ url: string; expiresAt: string }> {
+    const video = await this.videoRepository.findOne({
+      where: { public_id: publicId },
+    });
+
+    if (!video) {
+      throw new VideoNotFoundException();
+    }
+
+    if (video.status !== VideoStatus.READY) {
+      throw new VideoNotReadyException();
+    }
+
+    return this.storageService.getPresignedDownloadUrl(video.storage_key);
   }
 }

@@ -8,6 +8,7 @@ import queueConfig from '../config/queue.config';
 import storageConfig from '../config/storage.config';
 import { envValidationSchema } from '../config/env.validation';
 import { VideosModule } from '../videos/videos.module';
+import { ProcessingModule } from '../processing/processing.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { VideosModule } from '../videos/videos.module';
       synchronize: false,
     }),
     VideosModule,
+    ProcessingModule,
   ],
 })
 export class WorkerModule {}
