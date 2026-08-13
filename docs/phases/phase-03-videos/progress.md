@@ -1,7 +1,7 @@
 # phase-03-videos — Progress
 
 **Status:** in_progress
-**SIs:** 5/13 completed
+**SIs:** 9/13 completed
 
 ### SI-03.1 — Infra: Redis, BullMQ, and S3 Client Dependencies + Compose Services
 - **Status:** completed
@@ -49,24 +49,41 @@
   - VideosModule updated to export VideosService and import StorageModule + ChannelsModule
 
 ### SI-03.6 — Endpoint POST /videos/:publicId/complete-upload
-- **Status:** pending
-- **Tests:** pending
-- **Observations:** none
+- **Status:** completed
+- **Tests:** 4 unit tests, 2 integration tests (part of combined videos.e2e-spec.ts)
+- **Observations:**
+  - Created CompleteUploadDto with nested UploadPartDto validation
+  - Implemented VideoQueueService to enqueue video.processing jobs via BullMQ
+  - Added completeUpload method to VideosService with full error handling
+  - Post endpoint registered in VideosController with proper OpenAPI documentation
+  - Exception handling for InvalidUploadPartsException from StorageService mapped to domain exception
 
 ### SI-03.7 — Endpoint GET /videos/:publicId (Status)
-- **Status:** pending
-- **Tests:** pending
-- **Observations:** none
+- **Status:** completed
+- **Tests:** 2 unit tests, 2 integration tests (part of combined videos.e2e-spec.ts)
+- **Observations:**
+  - Implemented getStatus method in VideosService with ownership validation
+  - Get endpoint registered in VideosController with OpenAPI documentation
+  - Returns publicId, status, durationSeconds, failureReason, and ISO 8601 createdAt
 
 ### SI-03.8 — Infra: Video Worker Bootstrap
-- **Status:** pending
+- **Status:** completed
 - **Tests:** no tests
-- **Observations:** none
+- **Observations:**
+  - Created WorkerModule with TypeOrmModule and BullModule.forRoot configuration
+  - Created worker.main.ts bootstrap entry point for the worker process
+  - Added worker service to compose.yaml with dependencies on db, redis, and minio
+  - Added npm run start:worker script to package.json
+  - Worker runs independently from nestjs-api and consumes the same queue infrastructure
 
 ### SI-03.9 — FFprobe Metadata Extraction
-- **Status:** pending
-- **Tests:** pending
-- **Observations:** none
+- **Status:** completed
+- **Tests:** 3 unit tests, 2 integration tests (requires ffprobe binary)
+- **Observations:**
+  - Created FfprobeService with extractDuration method using child_process.execFile
+  - Parses ffprobe JSON output to extract duration from format or streams
+  - Throws MetadataExtractionError on any failure (missing ffprobe, invalid format, unparseable output)
+  - Service exports MetadataExtractionError for use in processing pipeline
 
 ### SI-03.10 — FFmpeg Thumbnail Generation
 - **Status:** pending

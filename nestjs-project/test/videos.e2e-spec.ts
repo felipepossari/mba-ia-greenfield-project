@@ -15,8 +15,8 @@ describe('Videos Endpoints (e2e)', () => {
 
   let testChannel: Channel;
   let accessToken: string;
-  let testEmail = 'test@example.com';
-  let testPassword = 'Test@123456';
+  const testEmail = 'test@example.com';
+  const testPassword = 'Test@123456';
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -78,7 +78,10 @@ describe('Videos Endpoints (e2e)', () => {
     accessToken = await registerConfirmAndLogin(iterationEmail);
 
     // Create a channel for the user via direct DB
-    const userResult = await dataSource.query('SELECT id FROM users WHERE email = $1', [iterationEmail]);
+    const userResult = await dataSource.query(
+      'SELECT id FROM users WHERE email = $1',
+      [iterationEmail],
+    );
     const userId = userResult[0].id;
 
     testChannel = await channelRepository.save({
@@ -127,13 +130,11 @@ describe('Videos Endpoints (e2e)', () => {
     });
 
     it('should return 401 when access token is missing', async () => {
-      const response = await request(app.getHttpServer())
-        .post('/videos')
-        .send({
-          filename: 'test-video.mp4',
-          fileSizeBytes: 1000000,
-          mimeType: 'video/mp4',
-        });
+      const response = await request(app.getHttpServer()).post('/videos').send({
+        filename: 'test-video.mp4',
+        fileSizeBytes: 1000000,
+        mimeType: 'video/mp4',
+      });
 
       expect(response.status).toBe(401);
     });
@@ -158,9 +159,7 @@ describe('Videos Endpoints (e2e)', () => {
         .post(`/videos/${publicId}/complete-upload`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
-          parts: [
-            { partNumber: 1, eTag: 'etag1' },
-          ],
+          parts: [{ partNumber: 1, eTag: 'etag1' }],
         });
 
       expect(response.status).toBe(200);
@@ -181,9 +180,7 @@ describe('Videos Endpoints (e2e)', () => {
         .post(`/videos/${video.public_id}/complete-upload`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
-          parts: [
-            { partNumber: 1, eTag: 'etag1' },
-          ],
+          parts: [{ partNumber: 1, eTag: 'etag1' }],
         });
 
       expect(response.status).toBe(409);
@@ -195,9 +192,7 @@ describe('Videos Endpoints (e2e)', () => {
         .post('/videos/unknown123/complete-upload')
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
-          parts: [
-            { partNumber: 1, eTag: 'etag1' },
-          ],
+          parts: [{ partNumber: 1, eTag: 'etag1' }],
         });
 
       expect(response.status).toBe(404);
@@ -212,7 +207,10 @@ describe('Videos Endpoints (e2e)', () => {
 
       await registerConfirmAndLogin(otherEmail);
 
-      const otherUserResult = await dataSource.query('SELECT id FROM users WHERE email = $1', [otherEmail]);
+      const otherUserResult = await dataSource.query(
+        'SELECT id FROM users WHERE email = $1',
+        [otherEmail],
+      );
       const otherUserId = otherUserResult[0].id;
 
       const otherChannel = await channelRepository.save({
@@ -232,9 +230,7 @@ describe('Videos Endpoints (e2e)', () => {
         .post(`/videos/${video.public_id}/complete-upload`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send({
-          parts: [
-            { partNumber: 1, eTag: 'etag1' },
-          ],
+          parts: [{ partNumber: 1, eTag: 'etag1' }],
         });
 
       expect(response.status).toBe(404);
@@ -280,7 +276,10 @@ describe('Videos Endpoints (e2e)', () => {
 
       await registerConfirmAndLogin(otherEmail);
 
-      const otherUserResult = await dataSource.query('SELECT id FROM users WHERE email = $1', [otherEmail]);
+      const otherUserResult = await dataSource.query(
+        'SELECT id FROM users WHERE email = $1',
+        [otherEmail],
+      );
       const otherUserId = otherUserResult[0].id;
 
       const otherChannel = await channelRepository.save({
@@ -313,8 +312,9 @@ describe('Videos Endpoints (e2e)', () => {
         status: VideoStatus.READY,
       });
 
-      const response = await request(app.getHttpServer())
-        .get(`/videos/${video.public_id}/stream`);
+      const response = await request(app.getHttpServer()).get(
+        `/videos/${video.public_id}/stream`,
+      );
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('url');
@@ -329,16 +329,18 @@ describe('Videos Endpoints (e2e)', () => {
         status: VideoStatus.PROCESSING,
       });
 
-      const response = await request(app.getHttpServer())
-        .get(`/videos/${video.public_id}/stream`);
+      const response = await request(app.getHttpServer()).get(
+        `/videos/${video.public_id}/stream`,
+      );
 
       expect(response.status).toBe(409);
       expect(response.body.error).toBe('VIDEO_NOT_READY');
     });
 
     it('should return 404 for unknown video', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/videos/unknown123/stream');
+      const response = await request(app.getHttpServer()).get(
+        '/videos/unknown123/stream',
+      );
 
       expect(response.status).toBe(404);
       expect(response.body.error).toBe('VIDEO_NOT_FOUND');
@@ -354,8 +356,9 @@ describe('Videos Endpoints (e2e)', () => {
         status: VideoStatus.READY,
       });
 
-      const response = await request(app.getHttpServer())
-        .get(`/videos/${video.public_id}/download`);
+      const response = await request(app.getHttpServer()).get(
+        `/videos/${video.public_id}/download`,
+      );
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('url');
@@ -371,16 +374,18 @@ describe('Videos Endpoints (e2e)', () => {
         status: VideoStatus.DRAFT,
       });
 
-      const response = await request(app.getHttpServer())
-        .get(`/videos/${video.public_id}/download`);
+      const response = await request(app.getHttpServer()).get(
+        `/videos/${video.public_id}/download`,
+      );
 
       expect(response.status).toBe(409);
       expect(response.body.error).toBe('VIDEO_NOT_READY');
     });
 
     it('should return 404 for unknown video', async () => {
-      const response = await request(app.getHttpServer())
-        .get('/videos/unknown123/download');
+      const response = await request(app.getHttpServer()).get(
+        '/videos/unknown123/download',
+      );
 
       expect(response.status).toBe(404);
       expect(response.body.error).toBe('VIDEO_NOT_FOUND');

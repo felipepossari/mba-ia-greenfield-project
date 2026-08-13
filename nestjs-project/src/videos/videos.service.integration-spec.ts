@@ -13,10 +13,12 @@ describe('VideosService (Integration)', () => {
   const storageServiceMock = {
     initiateMultipartUpload: jest.fn().mockResolvedValue({
       uploadId: 'test-upload-id',
-      partUrls: [
-        { partNumber: 1, url: 'https://s3.example.com/part1' },
-      ],
+      partUrls: [{ partNumber: 1, url: 'https://s3.example.com/part1' }],
     }),
+  };
+
+  const videoQueueServiceMock = {
+    enqueueProcessing: jest.fn().mockResolvedValue(undefined),
   };
 
   beforeAll(async () => {
@@ -32,10 +34,15 @@ describe('VideosService (Integration)', () => {
     });
 
     await dataSource.initialize();
-    service = new VideosService(dataSource, storageServiceMock as any);
     userRepository = dataSource.getRepository(User);
     channelRepository = dataSource.getRepository(Channel);
     videoRepository = dataSource.getRepository(Video);
+    service = new VideosService(
+      dataSource,
+      storageServiceMock as any,
+      videoRepository,
+      videoQueueServiceMock as any,
+    );
   });
 
   afterAll(async () => {

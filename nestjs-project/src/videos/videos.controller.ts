@@ -15,12 +15,12 @@ import {
   getSchemaPath,
 } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { Public } from '../auth/decorators/public.decorator';
 import type { JwtPayload } from '../auth/auth.types';
 import { ApiErrorEnvelope } from '../common/openapi/api-error-envelope.dto';
 import { VideosService } from './videos.service';
 import { ChannelsService } from '../channels/channels.service';
 import { InitiateUploadDto } from './dto/initiate-upload.dto';
+import { CompleteUploadDto } from './dto/complete-upload.dto';
 import { InitiateUploadResponse } from './videos.service';
 
 @ApiTags('videos')
@@ -84,5 +84,90 @@ export class VideosController {
       dto.fileSizeBytes,
       dto.mimeType,
     );
+  }
+
+  @Post(':publicId/complete-upload')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({
+    summary: 'Complete video upload',
+    description:
+      'Complete the S3 multipart upload and transition the video to processing.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Upload completed successfully',
+    schema: {
+      properties: {
+        publicId: { type: 'string' },
+        status: { type: 'string', enum: ['processing'] },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid upload parts',
+    schema: { $ref: getSchemaPath(ApiErrorEnvelope) },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Video not found or does not belong to the user',
+    schema: { $ref: getSchemaPath(ApiErrorEnvelope) },
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Upload already completed',
+    schema: { $ref: getSchemaPath(ApiErrorEnvelope) },
+  })
+  async completeUpload(
+    @CurrentUser() user: JwtPayload,
+    @Param('publicId') publicId: string,
+    @Body() dto: CompleteUploadDto,
+  ): Promise<{ publicId: string; status: string }> {
+    const channel = await this.channelsService.getChannelByUserId(user.sub);
+
+    return this.videosService.completeUpload(channel.id, publicId, dto.parts);
+  }
+
+  @Get(':publicId')
+  @ApiBearerAuth('access-token')
+  @ApiOperation({
+    summary: 'Get video status',
+    description: 'Get the current status and metadata of a video.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Video status retrieved successfully',
+    schema: {
+      properties: {
+        publicId: { type: 'string' },
+        status: {
+          type: 'string',
+          enum: ['draft', 'uploaded', 'processing', 'ready', 'failed'],
+        },
+        durationSeconds: { type: 'number', nullable: true },
+        failureReason: { type: 'string', nullable: true },
+        createdAt: { type: 'string', format: 'date-time' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Video not found or does not belong to the user',
+    schema: { $ref: getSchemaPath(ApiErrorEnvelope) },
+  })
+  async getStatus(
+    @CurrentUser() user: JwtPayload,
+    @Param('publicId') publicId: string,
+  ): Promise<{
+    publicId: string;
+    status: string;
+    durationSeconds: number | null;
+    failureReason: string | null;
+    createdAt: string;
+  }> {
+    const channel = await this.channelsService.getChannelByUserId(user.sub);
+
+    return this.videosService.getStatus(channel.id, publicId);
   }
 }
